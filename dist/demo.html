@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+
+<body>
+    <section class='title-area'>
+        <h1>Tensorflow Demos</h1>
+        <p class='subtitle'>Some Tensorflow Machine Learning Inference Demos</p>
+    </section>
+
+
+    <section>
+        <p class='section-head'>Inference Mode</p>
+        <div>
+            <label>Example:</label>
+            <select id="model-type">
+          <option value="1" selected="selected">object_det</option>
+          <option value="2">mnist_digit</option>
+        </select>
+        </div>
+    </section>
+    <section>
+        <form id="file-form">
+            <p>Upload an image file by using the file dialog below.</p>
+            <input id='uploaded_image' type='file' />
+            <br><canvas id="original_canvas" width="200" height="200"></canvas>
+            <br><canvas id="predicted_canvas" width="200" height="200"></canvas>
+            <!--<br><img id="myImg" src="#" alt="your image" height=200 width=200>-->
+        </form>
+        <button id="infer">Inference</button>
+    </section>
+
+</body>
+<script type="text/javascript" src="bundle.js"></script>
+
+</html>
