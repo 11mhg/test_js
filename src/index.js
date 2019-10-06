@@ -152,7 +152,7 @@ async function infer() {
         // return true;
 
 
-        let resultBoxes = await backend.computeBatch(curImgArray,curImgShape);
+        let resultBoxes = await backend.computeBatch(curImgArray,curImgShape, false);
         for (let i=0;i<resultBoxes.length;i++){
             let bb = resultBoxes[i];
             await backend.drawBoxestoContext( bb, document.getElementById('predicted_canvas').getContext("2d"));

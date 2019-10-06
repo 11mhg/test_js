@@ -89,51 +89,51 @@ import config from './prestriate_config.js';
 */
 
 //draw pixel array and object bounding box overlay onto canvas context
-function drawPixelArrayToContext(
-    myPixels,
-    myDimensions,
-    myContext,
-    myBoxes
-) {
+// function drawPixelArrayToContext(
+//     myPixels,
+//     myDimensions,
+//     myContext,
+//     myBoxes
+// ) {
 
-    let savedMax = ((myPixels.length / 4) ** (1 / 2));
+//     let savedMax = ((myPixels.length / 4) ** (1 / 2));
 
-    let originalWidth = myDimensions[0];
-    let originalHeight = myDimensions[1];
+//     let originalWidth = myDimensions[0];
+//     let originalHeight = myDimensions[1];
 
-    const maxWidth = myContext.canvas.width;
-    const maxHeight = myContext.canvas.height;
+//     const maxWidth = myContext.canvas.width;
+//     const maxHeight = myContext.canvas.height;
 
-    const savedRatio = Math.min(savedMax / originalWidth, savedMax / originalHeight);
+//     const savedRatio = Math.min(savedMax / originalWidth, savedMax / originalHeight);
 
-    const savedWidth = originalWidth * savedRatio;
-    const savedHeight = originalHeight * savedRatio;
+//     const savedWidth = originalWidth * savedRatio;
+//     const savedHeight = originalHeight * savedRatio;
 
-    const offsetWidth = (savedMax - savedWidth) / 2;
-    const offsetHeight = (savedMax - savedHeight) / 2;
+//     const offsetWidth = (savedMax - savedWidth) / 2;
+//     const offsetHeight = (savedMax - savedHeight) / 2;
 
-    const mysteryRatio = Math.min(maxWidth / savedWidth, maxHeight / savedHeight);
+//     const mysteryRatio = Math.min(maxWidth / savedWidth, maxHeight / savedHeight);
 
-    myContext.clearRect(0, 0, myContext.canvas.width, myContext.canvas.height);
+//     myContext.clearRect(0, 0, myContext.canvas.width, myContext.canvas.height);
 
-    let myImageData = new ImageData(myPixels, savedMax, savedMax);
+//     let myImageData = new ImageData(myPixels, savedMax, savedMax);
 
-    let newContext = document.createElement('canvas').getContext('2d');
-    newContext.canvas.width = savedMax;
-    newContext.canvas.height = savedMax;
+//     let newContext = document.createElement('canvas').getContext('2d');
+//     newContext.canvas.width = savedMax;
+//     newContext.canvas.height = savedMax;
 
-    newContext.putImageData(myImageData, 0, 0);
-    newContext = drawBoxestoContext(myBoxes, newContext);
-    const targetWidth = savedWidth * mysteryRatio;
-    const targetHeight = savedHeight * mysteryRatio;
+//     newContext.putImageData(myImageData, 0, 0);
+//     newContext = drawBoxestoContext(myBoxes, newContext);
+//     const targetWidth = savedWidth * mysteryRatio;
+//     const targetHeight = savedHeight * mysteryRatio;
 
-    const targetOffsetWidth = (maxWidth - targetWidth) / 2;
-    const targetOffsetHeight = (maxHeight - targetHeight) / 2;
+//     const targetOffsetWidth = (maxWidth - targetWidth) / 2;
+//     const targetOffsetHeight = (maxHeight - targetHeight) / 2;
 
-    myContext.drawImage(newContext.canvas, offsetWidth, offsetHeight, savedWidth, savedHeight, targetOffsetWidth, targetOffsetHeight, targetWidth, targetHeight);
+//     myContext.drawImage(newContext.canvas, offsetWidth, offsetHeight, savedWidth, savedHeight, targetOffsetWidth, targetOffsetHeight, targetWidth, targetHeight);
 
-    return myContext;
-}
+//     return myContext;
+// }
 
 //draw provided bounding boxes to a provided context
 function drawBoxestoContext(
@@ -152,7 +152,6 @@ function drawBoxestoContext(
 
     //set line pixel width using provided thickness multiplier
     myContext.lineWidth = myContext.canvas.width * myLines;
-    console.log(myBoxes);
     for (let i = 0; i < myBoxes.length; i++) {
         let myIndex = myCategories.indexOf(myBoxes[i].category);
 
@@ -190,7 +189,7 @@ function drawBoxestoContext(
 
 //coordinates the detections on the provided batch of images
 async function computeBatch(
-    myImages, myShapes
+    myImages, myShapes, testSerialize = true
 ) {
     var myCompute = 'browser';
 
