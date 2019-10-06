@@ -1,8 +1,9 @@
-"use strict";
+//"use strict";
 //import * as config from './config';
 import * as tf from '@tensorflow/tfjs';
 import prestriate from '@aisight/prestriate';
 import config from './prestriate_config.js';
+//import tfserialize from './tfserialize';
 
 /*
   await protocol.keychain.getKeystore();
@@ -441,17 +442,17 @@ async function handleFiles(
     return myBoxes;
 }
 
- const platform = {
-//     drawPixelArrayToContext,
-     drawBoxestoContext,
-//     drawImageToContext,
-//     processImage,
-//     processVideo,
-//     loadImage,
-//     loadVideo,
-     computeBatch
-//     handleFiles,
-//     modelTest,
- };
+const platform = {
+    //     drawPixelArrayToContext,
+    drawBoxestoContext,
+    //     drawImageToContext,
+    //     processImage,
+    //     processVideo,
+    //     loadImage,
+    //     loadVideo,
+    computeBatch
+    //     handleFiles,
+    //     modelTest,
+};
 
 export default platform;

@@ -2,7 +2,7 @@
 // aisight inc
 // this build is not for commercial use
 
-//"use strict";
+"use strict";
 import * as tf from '@tensorflow/tfjs'
 import obj_backend from './obj_backend';
 import mnist_backend from './mnist_backend';
