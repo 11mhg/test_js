@@ -2,6 +2,7 @@
 //import * as config from './config';
 import * as tf from '@tensorflow/tfjs';
 import prestriate from '@aisight/prestriate';
+import config from './prestriate_config.js';
 
 /*
   await protocol.keychain.getKeystore();
@@ -138,33 +139,34 @@ function drawPixelArrayToContext(
 function drawBoxestoContext(
     myBoxes,
     myContext,
-    myCategories = config.objectCategories,
-    myThreshold = config.confidenceThreshold,
-    myLines = config.boxLines,
-    inputSize = config.imageWidth
+    myCategories = ['person', 'vehicle', 'animal', 'object'],
+    myThreshold = 0.25,
+    myLines = 0.0025,
+    inputSize = 480
 ) {
 
     let myWidthMod = myContext.canvas.width / inputSize;
     let myHeightMod = myContext.canvas.height / inputSize;
 
+    let objectColours = ['blue', 'green', 'red', 'purple'];
+
     //set line pixel width using provided thickness multiplier
     myContext.lineWidth = myContext.canvas.width * myLines;
-
     for (let i = 0; i < myBoxes.length; i++) {
-
+        console.log(myBoxes[i].category);
         let myIndex = myCategories.indexOf(myBoxes[i].category);
 
         //draw only boxes of the provided categories and confidence threshold
         if ((myIndex != -1) && (myBoxes[i].score >= myThreshold)) {
-
+            console.log(myBoxes[i].box);
             myBoxes[i].box[0] = myBoxes[i].box[0] * myWidthMod;
             myBoxes[i].box[1] = myBoxes[i].box[1] * myHeightMod;
             myBoxes[i].box[2] = myBoxes[i].box[2] * myWidthMod;
             myBoxes[i].box[3] = myBoxes[i].box[3] * myHeightMod;
 
             //set draw colours from array in config file
-            myContext.strokeStyle = config.objectColours[myIndex];
-            myContext.fillStyle = config.objectColours[myIndex];
+            myContext.strokeStyle = objectColours[myIndex];
+            myContext.fillStyle = objectColours[myIndex];
 
             //draw bounding box
             myContext.beginPath();
@@ -189,9 +191,9 @@ function drawBoxestoContext(
 
 //coordinates the detections on the provided batch of images
 async function computeBatch(
-    myImages
+    myImages, myShapes
 ) {
-    var myComputer = 'browser';
+    var myCompute = 'browser';
 
     let myResults = [];
 
@@ -206,27 +208,27 @@ async function computeBatch(
 
         let myModel = await prestriate.load('https://aisight.ca/prestriate/model/model.json');
 
+
         for (let i = 0; i < myImages.length; i++) {
 
             //converts images from Uint8ClampedArray to Array and removes alpha channel 
             let thisImage = Array.from(myImages[i]);
-
-            //calculates input dimensions for the model from the provided image
-            const imageWidth = (thisImage.length / 3) ** (1 / 2);
+            let thisShape = Array.from(myShapes[i]);
 
             //converts image array to an appropriate tensor prior to loading into the model
             tf.setBackend('webgl');
             let imageTensor = await tf.tidy(() => {
-                let myTensor = tf.tensor(thisImage, [imageWidth, imageWidth, 3]);
+                let myTensor = tf.tensor(thisImage, thisShape);
                 return myTensor.expandDims(0).toFloat();
             });
 
             //calls loaded object detection model with the provided image tensor and adds the results to an array
             let thisPrediction = await myModel.detectFromTensor(imageTensor);
             //      let thisPrediction = await global.model.detectFromTensor(imageTensor);
+
+            //prediction tensor gives boxes between 0 and 480, need to normalize in future
             imageTensor.dispose();
             myResults.push(thisPrediction);
-            console.log(thisPrediction);
         }
     }
 
@@ -428,18 +430,17 @@ async function handleFiles(
     return myBoxes;
 }
 
-// const platform = {
+ const platform = {
 //     drawPixelArrayToContext,
-//     drawBoxestoContext,
+     drawBoxestoContext,
 //     drawImageToContext,
 //     processImage,
 //     processVideo,
 //     loadImage,
 //     loadVideo,
-//     computeBatch,
+     computeBatch
 //     handleFiles,
 //     modelTest,
-//     serializeModel
-// };
+ };
 
-//export default platform;
+export default platform;
