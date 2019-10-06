@@ -187,6 +187,14 @@ function drawBoxestoContext(
     return myContext;
 }
 
+// async function serializeModel(layersModel){
+
+// }
+
+// async function unserializeModel(ser_model){
+
+// }
+
 //coordinates the detections on the provided batch of images
 async function computeBatch(
     myImages, myShapes, testSerialize = true
@@ -205,6 +213,11 @@ async function computeBatch(
 
 
         let myModel = await prestriate.load('https://aisight.ca/prestriate/model/model.json');
+
+        // if (testSerialize){
+        //     let ser_model = await serializeModel(myModel);
+        //     myModel = await unserializeModel(ser_model);
+        // }
 
 
         for (let i = 0; i < myImages.length; i++) {
