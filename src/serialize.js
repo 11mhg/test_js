@@ -29,20 +29,20 @@
  *                                      cycles in less-common interpreters, such as Rhino and (especially)
  *                                      the NJS/NGS ES3 platform by Brian Basset.
  *
- *  *note* -    It is important to keep this module free of external dependencies, so that it
+ *  @note       It is important to keep this module free of external dependencies, so that it
  *              can be easily injected into workers without module loaders during application
  *              bootstrapping / debugging.
  *
- *  *bugs* -    There are known or suspected issues in the following areas:
- *              - Arrays which contain the same object more than once 
- *              - Arrays which mix numeric and non-numeric properties, especially if they are objects
- *              - Sparse Arrays
  *  @author     Wes Garland, wes@page.ca
  *  @date       June 2018
  *
+ *  @bugs       There are known or suspected issues in the following areas:
+ *              - Arrays which contain the same object more than once 
+ *              - Arrays which mix numeric and non-numeric properties, especially if they are objects
+ *              - Sparse Arrays
  */
 
-/* This prologue allows a CJS2 module's exports to be loaded with eval(readFileSync(filename)) */
+/* This prologue allows a CJS2 module's exports to be loaded with eval(fs.readFileSync(filename, 'utf-8')) */
 var _md
 if (typeof module === 'undefined' || typeof module.declare === 'undefined') {
   _md = (typeof module === 'object') ? module.declare : null
@@ -113,7 +113,7 @@ const ctors = [
   Boolean,
   Array,
   Function,
-  URL
+  ArrayBuffer
 ];
 
 /** Take a 'prepared object' (which can be represented by JSON) and turn it
@@ -188,9 +188,15 @@ function unprepare$object (seen, po, position) {
   } else {
     constructor = ctors[po.ctr]
   }
-  
+
   if (po.hasOwnProperty('arg')) {
-    o = new constructor(po.arg) 
+    // If the object is an ArrayBuffer, pass the args to a Uint8Array, then
+    // return its buffer.
+    if (constructor === ArrayBuffer) {
+      o = new Uint8Array(po.arg).buffer
+    } else {
+      o = new constructor(po.arg)
+    }
   } else {
     o = new constructor() // eslint-disable-line
   }
@@ -328,6 +334,10 @@ function unprepare$ArrayBuffer8 (po, position) {
       }
     }
   }
+  // If the object is an ArrayBuffer, just return the created buffer.
+  if (constructor === ArrayBuffer) {
+    return i8.buffer;
+  }
   return new constructor(i8.buffer, i8.byteOffset) // eslint-disable-line
 }
 
@@ -384,6 +394,10 @@ function unprepare$ArrayBuffer16 (po, position) {
     }
   }
 
+  // If the object is an ArrayBuffer, just return the created buffer.
+  if (constructor === ArrayBuffer) {
+    return i8.buffer;
+  }
   return new constructor(i8.buffer, i8.byteOffset) // eslint-disable-line
 }
 
@@ -428,14 +442,7 @@ function prepare (seen, o, where) {
   let i, ret
   let po = {}
 
-  if (o === null) { //ADDITION: CATCH NULL
-    return prepare$primitive(o, where)
-  }
-/*  if (typeof(o.flatten) !== 'undefined') { //ADDITION
-    console.log('TENSOR:');
-    console.log(o);
-  }*/
-  if (false && isPrimitiveLike(o)) { //THIS IS DUMB AND DOES NOTHING
+  if (isPrimitiveLike(o)) {
     if (!Array.isArray(o) || o.length < exports.scanArrayThreshold)
       return prepare$primitive(o, where)
   }
@@ -446,17 +453,19 @@ function prepare (seen, o, where) {
   if ((i = seen.indexOf(o)) === -1) {
     seen.push(o)
   } else {
-
-    if (typeof(o.flatten) !== 'undefined') {
-      console.log('OOPS!')
-    } else {
-      return { seen: i }
-    }
+    return { seen: i }
   }
   if (Array.isArray(o)) {
     return prepare$Array(seen, o, where)
   }
   if (ArrayBuffer.isView(o)) {
+    return prepare$ArrayBuffer(o)
+  }
+  if (o instanceof ArrayBuffer) {
+    // Reuse the code for prepare$ArrayBuffer by converting to a Uint8Array, but
+    // keeping the constructor so we know which object to create when unpreparing.
+    o = new Uint8Array(o)
+    o.constructor = ArrayBuffer
     return prepare$ArrayBuffer(o)
   }
   if (o.constructor === String || o.constructor === Number || o.constructor === Boolean) {
@@ -491,13 +500,7 @@ function prepare (seen, o, where) {
           if ((i = seen.indexOf(o[prop])) === -1) {
             po[prop] = prepare(seen, o[prop], where + '.' + prop)
           } else {
-            if (typeof(o[prop].flatten) !== 'undefined') {
-              console.log('TENSOR INCOMING!');
-              console.log(o[prop]);
-              po[prop] = prepare(seen, o[prop], where + '.' + prop)
-            } else {
-              po[prop] = { seen: i }
-            }
+            po[prop] = { seen: i }
           }
           break
         } /* else fallthrough */
@@ -785,7 +788,7 @@ function prepare$undefined (o) {
  *  @returns    an object which can be serialized with json
  */
 exports.marshal = function serialize$$marshal (what) {
-  return {_serializeVerId: exports.serializeVerId, what: prepare([], what, 'top')}
+  return {_serializeVerId: 'v5', what: prepare([], what, 'top')}
 }
 
 /** Turn a marshaled (prepared) value back into its original form
@@ -827,8 +830,5 @@ exports.deserialize = function deserialize (str) {
   return exports.unmarshal(JSON.parse(str))
 }
 
-exports.serializeVerId = 'v5'
-  
 if (_md) { module.declare = _md }
 /* end of module */ })
-
