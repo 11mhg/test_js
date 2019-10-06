@@ -70,10 +70,9 @@ async function imageIsLoaded(e) {
 
 function f32ToCanvas(pixeldata,pixelshape){
     var canvas = document.createElement('canvas');
+    canvas.width = pixelshape[1];
+    canvas.height = pixelshape[0];
     var ctx = canvas.getContext('2d');
-
-    ctx.width = pixelshape[1];
-    ctx.height = pixelshape[0];
 
     var imageData = ctx.createImageData(pixelshape[1],pixelshape[0]);
     var data = imageData.data;
@@ -95,20 +94,15 @@ function f32ToCanvas(pixeldata,pixelshape){
 
 //helper function which resizes pixels data to a particular width and height.
 async function resizepixelarray(
-    pixeldata, pixelshape, resize_width, resize_height,keep_aspect_ratio=false) {
+    pixeldata, pixelshape, resize_width, resize_height) {
     var canvas = f32ToCanvas(pixeldata,pixelshape);
 
     var newCanvas = document.createElement('canvas');
-    if (keep_aspect_ratio){
-        let new_size = aspectRatioResize(pixelshape[1],pixelshape[0],resize_width,resize_height);
-        resize_width = new_size[0];
-        resize_height = new_size[1];
-    }
 
     newCanvas.width = resize_width;
     newCanvas.height = resize_height;
     var newctx = newCanvas.getContext("2d");
-    newctx.drawImage(canvas,0,0);
+    newctx.drawImage(canvas,0,0,newCanvas.width,newCanvas.height);
 
     let newData = newctx.getImageData(0, 0, resize_width, resize_height);
     let pixelTensor = await tf.browser.fromPixels(newData);
@@ -133,11 +127,32 @@ async function infer() {
     console.log(selectedVal);
 
     if (selectedVal == 1) {
-        let resize_ret = await resizepixelarray(globalImageArray, globalImageShape, 480, 480);
-        globalImageArray = [resize_ret[0]];
-        globalImageShape = [resize_ret[1]];
 
-        let resultBoxes = await backend.computeBatch(globalImageArray,globalImageShape);
+        //test global image pixel
+        // let predCanvas = document.getElementById('predicted_canvas');
+        // predCanvas.width = globalImageShape[1];
+        // predCanvas.height = globalImageShape[0];
+        // let predctx = predCanvas.getContext("2d");
+        // let fcanvas = f32ToCanvas(globalImageArray,globalImageShape);
+        // predctx.drawImage(fcanvas,0,0);
+        // return true;
+
+        let resize_ret = await resizepixelarray(globalImageArray, globalImageShape, 480, 480);
+        let curImgArray = [resize_ret[0]];
+        let curImgShape = [resize_ret[1]];
+
+        // //TESTING THE PREDICTION CANVAS:
+        // let predCanvas = document.getElementById('predicted_canvas');
+        // predCanvas.width = curImgShape[0][1];
+        // predCanvas.height = curImgShape[0][0];
+        // let predctx = predCanvas.getContext("2d");
+        // let fcanvas = f32ToCanvas(curImgArray[0],curImgShape[0]);
+        // predctx.drawImage(fcanvas,0,0);
+
+        // return true;
+
+
+        let resultBoxes = await backend.computeBatch(curImgArray,curImgShape);
         for (let i=0;i<resultBoxes.length;i++){
             let bb = resultBoxes[i];
             await backend.drawBoxestoContext( bb, document.getElementById('predicted_canvas').getContext("2d"));

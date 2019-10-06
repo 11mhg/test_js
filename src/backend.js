@@ -140,7 +140,7 @@ function drawBoxestoContext(
     myBoxes,
     myContext,
     myCategories = ['person', 'vehicle', 'animal', 'object'],
-    myThreshold = 0.25,
+    myThreshold = 0.2,
     myLines = 0.0025,
     inputSize = 480
 ) {
@@ -152,13 +152,12 @@ function drawBoxestoContext(
 
     //set line pixel width using provided thickness multiplier
     myContext.lineWidth = myContext.canvas.width * myLines;
+    console.log(myBoxes);
     for (let i = 0; i < myBoxes.length; i++) {
-        console.log(myBoxes[i].category);
         let myIndex = myCategories.indexOf(myBoxes[i].category);
 
         //draw only boxes of the provided categories and confidence threshold
         if ((myIndex != -1) && (myBoxes[i].score >= myThreshold)) {
-            console.log(myBoxes[i].box);
             myBoxes[i].box[0] = myBoxes[i].box[0] * myWidthMod;
             myBoxes[i].box[1] = myBoxes[i].box[1] * myHeightMod;
             myBoxes[i].box[2] = myBoxes[i].box[2] * myWidthMod;
@@ -211,15 +210,15 @@ async function computeBatch(
 
         for (let i = 0; i < myImages.length; i++) {
 
-            //converts images from Uint8ClampedArray to Array and removes alpha channel 
-            let thisImage = Array.from(myImages[i]);
-            let thisShape = Array.from(myShapes[i]);
+            //converts images from float32array to regular array
+            let thisImage = myImages[i];
+            let thisShape = myShapes[i];
 
             //converts image array to an appropriate tensor prior to loading into the model
             tf.setBackend('webgl');
             let imageTensor = await tf.tidy(() => {
                 let myTensor = tf.tensor(thisImage, thisShape);
-                return myTensor.expandDims(0).toFloat();
+                return myTensor.expandDims(0).toFloat().div(255.);
             });
 
             //calls loaded object detection model with the provided image tensor and adds the results to an array
