@@ -141,6 +141,7 @@ const ENVIRONMENT_IS_NODE = typeof require === 'function' &&
     typeof global.process.release === 'object' && global.process.release.name === 'node';
 const ENVIRONMENT_IS_WORKER = typeof importScripts === 'function';
 const ENVIRONMENT_IS_WEB = typeof window === 'object' && typeof document === 'object' && !ENVIRONMENT_IS_WORKER;
+const isStrict = (function() { return !this; })();
 
 if (ENVIRONMENT_IS_WEB) {
     // In the browser, just script tag this in after tensorflow.
