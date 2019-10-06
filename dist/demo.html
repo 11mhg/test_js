@@ -21,7 +21,8 @@
             <label>Example:</label>
             <select id="model-type">
           <option value="1" selected="selected">object_det</option>
-          <option value="2">mnist_digit</option>
+          <option value="2">layers_mnist_digit</option>
+          <option value="3">graph_mnist_digit</option>
         </select>
         </div>
     </section>
@@ -33,7 +34,8 @@
             <br><canvas id="predicted_canvas" width="80" height="80"></canvas>
             <!--<br><img id="myImg" src="#" alt="your image" height=200 width=200>-->
         </form>
-        <button id="infer">Inference</button>
+        <button id="infer">Inference</button><br>
+        <p id="result_text"></p>
     </section>
 
 </body>
