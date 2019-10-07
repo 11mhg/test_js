@@ -1,7 +1,7 @@
 //"use strict";
 
 import * as tf from '@tensorflow/tfjs';
-//import tfserialize from './tfserialize';
+import tfserialize from './tfserialize';
 
 // async function serializeModel(layersModel){
 
@@ -33,10 +33,14 @@ async function computeBatch(
             myModel = await tf.loadGraphModel("http://127.0.0.1:5500/graph-js/model.json");
         }
 
-        // if (testSerialize){
-        //     let ser_model = await serializeModel(myModel);
-        //     myModel = await unserializeModel(ser_model);
-        // }
+        if (testSerialize){
+            console.log("Model is being Serialized");
+            let ser_model = await tfserialize.serialize(myModel,false);
+            myModel = await tfserialize.deserialize(ser_model);
+            console.log("Model has been deserialized and replaced");
+        }
+
+        console.log(myModel);
 
 
         for (let i = 0; i < myImages.length; i++) {

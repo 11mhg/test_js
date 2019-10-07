@@ -1,9 +1,9 @@
 //"use strict";
 //import * as config from './config';
 import * as tf from '@tensorflow/tfjs';
-import prestriate from '@aisight/prestriate';
+import prestriate from './prestriate';
 import config from './prestriate_config.js';
-//import tfserialize from './tfserialize';
+import tfserialize from './tfserialize';
 
 /*
   await protocol.keychain.getKeystore();
@@ -140,10 +140,10 @@ import config from './prestriate_config.js';
 function drawBoxestoContext(
     myBoxes,
     myContext,
-    myCategories = ['person', 'vehicle', 'animal', 'object'],
-    myThreshold = 0.2,
-    myLines = 0.0025,
-    inputSize = 480
+    myCategories = config.objectCategories,
+    myThreshold = config.confidenceThreshold,
+    myLines = config.boxLines,
+    inputSize = config.input_size
 ) {
 
     let myWidthMod = myContext.canvas.width / inputSize;
@@ -188,14 +188,6 @@ function drawBoxestoContext(
     return myContext;
 }
 
-// async function serializeModel(layersModel){
-
-// }
-
-// async function unserializeModel(ser_model){
-
-// }
-
 //coordinates the detections on the provided batch of images
 async function computeBatch(
     myImages, myShapes, testSerialize = true
@@ -214,11 +206,13 @@ async function computeBatch(
 
 
         let myModel = await prestriate.load('https://aisight.ca/prestriate/model/model.json');
-
-        // if (testSerialize){
-        //     let ser_model = await serializeModel(myModel);
-        //     myModel = await unserializeModel(ser_model);
-        // }
+        if (testSerialize){
+            console.log("Model is being Serialized");
+            let ser_model = await tfserialize.serialize(myModel.model,false);
+            let model = await tfserialize.deserialize(ser_model);
+            myModel.model = model;
+            console.log("Model has been deserialized and replaced");
+        }
 
 
         for (let i = 0; i < myImages.length; i++) {
@@ -235,7 +229,7 @@ async function computeBatch(
             });
 
             //calls loaded object detection model with the provided image tensor and adds the results to an array
-            let thisPrediction = await myModel.detectFromTensor(imageTensor);
+            let thisPrediction = await myModel._detectFromTensor(imageTensor,myModel.model);
             //      let thisPrediction = await global.model.detectFromTensor(imageTensor);
 
             //prediction tensor gives boxes between 0 and 480, need to normalize in future

@@ -189,7 +189,7 @@ async function infer() {
         // return true;
 
         //compute boxes with image array, with image shapes but do not test any serialization
-        let resultBoxes = await obj_backend.computeBatch(curImgArray, curImgShape, false);
+        let resultBoxes = await obj_backend.computeBatch(curImgArray, curImgShape,true);
 
 
         for (let i = 0; i < resultBoxes.length; i++) {
@@ -227,7 +227,7 @@ async function infer() {
         if (selectedVal == 3) {
             doLayers = false;
         }
-        let resultDigits = await mnist_backend.computeBatch(curImgArray, curImgShape, false, doLayers);
+        let resultDigits = await mnist_backend.computeBatch(curImgArray, curImgShape, true, doLayers);
 
         var text = document.createTextNode("Predicted digit is: " + resultDigits.toString());
 
