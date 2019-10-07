@@ -4,6 +4,21 @@ import * as tf from '@tensorflow/tfjs';
 import serialjs from './serialize';
 
 
+
+/**
+ * A tf.IOHandler that's only purpose is to override the tf.graph IO handler 
+ */
+class GraphIOHandler{
+    constructor(modelArtifacts){
+        this.modelArtifacts = modelArtifacts;
+    }
+
+    async load(){
+        return this.modelArtifacts;
+    }
+}
+
+
 /**
  * A tf.IOHandler that serializes a model into a string.
  */
@@ -92,6 +107,63 @@ async function fromTrainingInfo(trainingInfoJSON) {
     const parser = temp[1]
 
     return { optimizer: parser(constructor, config), loss: trainingInfo.loss, metrics: trainingInfo.metrics }
+}
+
+/**
+ *  Serializes a Tensorflow Graph Model. Note graph models
+ *  can only be created from a tensorflow [Saved Model] in python
+ *  that has been converted to js using the tensorflowjs_converter
+ * @param {tf.GraphModel} - The Graph model that we'd like to serialize. 
+ * @returns {string} - The serialized Model
+ */
+async function serializeGraph(model){
+    const modelArtifacts = await model.handler.load();
+
+    const result =  {
+        modelArtifactsInfo: {
+            dateSaved: new Date(),
+            // Note that this isn't exactly correct, since we're not using
+            // JSON, but rather serialize.js for this.
+            modelTopologyType: 'JSON',
+            modelTopologyBytes: modelArtifacts.modelTopology == null ?
+                0 : JSON.stringify(modelArtifacts.modelTopology).length,
+            weightSpecsBytes: modelArtifacts.weightSpecs == null ?
+                0 : JSON.stringify(modelArtifacts.weightSpecs).length,
+            weightDataBytes: modelArtifacts.weightData == null ?
+                0 : modelArtifacts.weightData.byteLength,
+        }
+    };
+    let serializedArtifacts = serialjs.serialize(modelArtifacts);
+    const completeModel = { model: serializedArtifacts };
+    return await JSON.stringify(completeModel);
+}
+
+
+
+/**
+ * Deserializes a graph model by creating a 
+ * tf.GraphModel and overriding the IO Handler so that
+ * all we need to do is to load the graph model in order
+ * to override the proper weights and model topology
+ * To see what tf.GraphModel looks like look at tensorflow/tfjs-converter/src/executor/graph_model.ts
+ * @param {string} - The serialized model
+ * @returns {tf.GraphModel} - The graph model
+ */
+async function deserializeGraph(str){
+    const completeModel = await JSON.parse(str);
+
+    const modelArtifacts = serialjs.deserialize(completeModel.model);
+    const graphModel = new tf.GraphModel();
+    graphModel.modelArtifacts = modelArtifacts;
+
+    graphModel.findIOHandler = function() {
+        this.handler = new GraphIOHandler(this.modelArtifacts);
+    }
+
+    await graphModel.load();
+
+    return graphModel;
+
 }
 
 
@@ -194,7 +266,9 @@ async function deserialize(str) {
 
 const tfserialize = {
     serialize,
-    deserialize
+    deserialize,
+    serializeGraph,
+    deserializeGraph
 };
 
 export default tfserialize;

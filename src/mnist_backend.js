@@ -15,32 +15,39 @@ import tfserialize from './tfserialize';
 async function computeBatch(
     myImages, myShapes, testSerialize = true, layersModel = false
 ) {
-    var myCompute = 'browser';
+    //var myCompute = 'browser';
+    var myCompute = 'scheduler';
+
+    let myModel = null;
+    if (layersModel) {
+        myModel = await tf.loadLayersModel("http://127.0.0.1:5500/layers-js/model.json");
+    } else {
+        myModel = await tf.loadGraphModel("http://127.0.0.1:5500/graph-js/model.json");
+    }
 
     let myResults = [];
 
     if (myCompute == 'local' || myCompute == 'scheduler') {
 
         //DCP computation prompts user for a wallet, then passes on the images
-        await protocol.keychain.getKeystore();
-        myResults = await _callDCP(myImages);
+        await dcp.protocol.keychain.getKeystore();
+        myResults = await _callDCP(myImages,myModel,layersModel,myCompute);
 
     } else if (myCompute == 'browser') {
-        let myModel = null;
-        if (layersModel) {
-            myModel = await tf.loadLayersModel("http://127.0.0.1:5500/layers-js/model.json");
-        } else {
-            myModel = await tf.loadGraphModel("http://127.0.0.1:5500/graph-js/model.json");
-        }
 
-        if (testSerialize){
-            console.log("Model is being Serialized");
+        if (testSerialize && layersModel){
+            console.log("Layers Model is being Serialized");
             let ser_model = await tfserialize.serialize(myModel,false);
+            console.log("Model size after serialization is: ", Buffer.byteLength(ser_model, 'utf8'));
             myModel = await tfserialize.deserialize(ser_model);
             console.log("Model has been deserialized and replaced");
+        }else if (testSerialize && !layersModel){
+            console.log("Graph Model is being Serialized");
+            let ser_model = await tfserialize.serializeGraph(myModel);
+            console.log("Model size after serialization is: ", Buffer.byteLength(ser_model, 'utf8'));
+            myModel = await tfserialize.deserializeGraph(ser_model);
+            console.log("Model has been deserialized and replaced");
         }
-
-        console.log(myModel);
 
 
         for (let i = 0; i < myImages.length; i++) {
@@ -74,22 +81,30 @@ async function computeBatch(
 //distributed computation of frame batches (requires an available DCP network)
 async function _callDCP(
     myImages,
-    myCompute,
-    myArchitecture
+    myModel,
+    layersModel,
+    myCompute
 ) {
 
     let myResults = [];
 
     //convert all pixel arrays to strings before passing to DCP
     for (let i = 0; i < myImages.length; i++) {
-        myImages[i] = myImages[i].toString();
+        myImages[i] = JSON.stringify(myImages[i]);
     }
 
-    let newModel = await prestriate.load();
+    let ser_model = null;
 
-    let modelData = JSON.stringify(newModel);
-
-    console.log(modelData);
+    if (layersModel){
+        console.log("Layers Model is being Serialized");
+        ser_model = await tfserialize.serialize(myModel,false);
+        console.log("Model size after serialization is: ", Buffer.byteLength(ser_model, 'utf8'));
+    }else if (!layersModel){
+        console.log("Graph Model is being Serialized");
+        ser_model = await tfserialize.serializeGraph(myModel);
+        console.log("Model size after serialization is: ", Buffer.byteLength(ser_model, 'utf8'));
+    }
+    myModel = null;
 
     /*
       //worker function to be passed to DCP, in the form of a template literal string
@@ -142,7 +157,6 @@ async function _callDCP(
 /*
     //load necessary DCP modules
     tf = require('tfjs');
-    nn = require('${myArchitecture}.js');
 
     setInterval(progress(), 5000);
 
@@ -185,22 +199,20 @@ async function _callDCP(
     return imageTensor;
 */
   }`;
-    console.log(workFunction);
     //define DCP generator, which receives array of image strings and a work function
-    const gen = compute.for([myImages], workFunction);
+    const gen = dcp.compute.for(myImages, workFunction);
 
     //define necessary modules, which must be available on the DCP module server 
-    gen.requires('tensorflowdcp/tfjs');
-    gen.requires('prestriatedcp/prestriate.js');
+    // gen.requires('tensorflowdcp/tfjs');
 
-    gen.on('accepted', (thisOutput) => {
-        console.log('Job accepted!');
-        console.log(gen.id);
-    });
+    // gen.on('accepted', (thisOutput) => {
+    //     console.log('Job accepted!');
+    //     console.log(gen.id);
+    // });
 
-    gen.on('complete', (thisOutput) => {
-        console.log('Job complete!');
-    });
+    // gen.on('complete', (thisOutput) => {
+    //     console.log('Job complete!');
+    // });
 
     //receives and collects the results of each worker thread
     gen.on('result', (thisOutput) => {
@@ -211,13 +223,15 @@ async function _callDCP(
 
     //worker thread title on DCP
     gen._generator.public = {
-        name: 'aiSight Test'
+        name: 'Test'
     };
 
     if (myCompute == 'scheduler') {
         //sets gpu requirement and DCC payment, calls DCP generator on scheduler server
         //gen._generator.capabilities = {gpu: true};
         await gen.exec(0.0001);
+        console.log('all images after: ',myResults);
+        throw "Here";
         return myResults;
     } else if (myCompute == 'local') {
         //sets number of local cores, calls DCP generator on the local machine

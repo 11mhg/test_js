@@ -209,6 +209,7 @@ async function computeBatch(
         if (testSerialize){
             console.log("Model is being Serialized");
             let ser_model = await tfserialize.serialize(myModel.model,false);
+            console.log("Model size after serialization is: ", Buffer.byteLength(ser_model, 'utf8'));
             let model = await tfserialize.deserialize(ser_model);
             myModel.model = model;
             console.log("Model has been deserialized and replaced");
