@@ -116,8 +116,6 @@ async function _callDCP(
     }
     myModel = null;
 
-    let inferenceObj = [];
-
 
     let myResults = [];
     
@@ -127,12 +125,13 @@ async function _callDCP(
 
     for (let i = 0; i < myImages.length; i++) {
         myImages[i] = JSON.stringify(myImages[i]);
-        inferenceObj.push({input: myImages[i], serialModel: ser_model, layersModel: layersModel});
     }
+
+    let inferenceObj = {serialModel: ser_model, layersModel: layersModel};
 
     
 
-    const workFunction = `async function (inferenceObj) {
+    const workFunction = `async function (images, inferenceObj) {
     //load necessary DCP modules
     tf = require('tfjs');
 
@@ -188,7 +187,7 @@ async function _callDCP(
     //define DCP generator, which receives array of image strings and a work function
     console.log(inferenceObj);
 
-    const gen = dcp.compute.for(inferenceObj, workFunction);
+    const gen = dcp.compute.for(myImages, workFunction,[inferenceObj]);
 
     //define necessary modules, which must be available on the DCP module server 
     gen.requires('tensorflowdcp/tfjs');
@@ -217,7 +216,7 @@ async function _callDCP(
         //gen._generator.capabilities = {gpu: true};
         await gen.exec(0.0001);
         console.log('inference Object: ',myResults);
-        console.log('are the models the same?: ',inferenceObj[0].serialModel === myResults[0].serialModel);
+        console.log('are the models the same?: ',inferenceObj.serialModel === myResults[0].serialModel);
         throw "Here";
         return myResults;
     } else if (myCompute == 'local') {
