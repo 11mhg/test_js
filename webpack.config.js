@@ -30,6 +30,6 @@ module.exports = {
             },
         ]
     },
-    //  target: 'node',
+    //target: 'node',
     //  externals: [nodeExternals({whitelist: [/^long/, /^protobufjs/, /^@protobufjs/, /^seedrandom/, /^@tensorflow/, /^@types/]})],
 };

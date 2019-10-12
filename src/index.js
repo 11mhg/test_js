@@ -242,6 +242,49 @@ async function infer() {
     return true;
 }
 
+async function testProtocol(){
+
+    if (document.getElementById('uploaded_image').value.length < 4) {
+        alert("Select photo for upload");
+        return false;
+    }
+
+    await dcp.protocol.keychain.getKeystore();
+    let [arr, shapes] = await resizepixelarray(globalImageArray, globalImageShape, 480, 480);
+    arr = [arr];
+
+    let str_arrs = [];
+    let test_arr = [1,2];
+    var d = new Date();
+    for (let i=0;i<10;i++){
+        str_arrs.push(JSON.stringify(arr[0]));
+        
+        console.log("Trying to send: ", Buffer.byteLength(str_arrs,'utf8')/1e6, " mb of data");
+        let starttime = Date.now() / 1000;
+        const workFunction = `async function (num, images) {
+            progress(1);
+            return num;
+          }`;
+        
+        const gen = dcp.compute.for(test_arr, workFunction, [str_arrs]);
+
+        gen.on('result', (thisOutput) => {
+            console.log("Completed one worker: ",thisOutput.result);
+        });
+
+        //worker thread title on DCP
+        gen._generator.public = {
+            name: 'ByteLengthTest'
+        };
+        await gen.exec(0.0001);
+        console.log("This one is succesful");
+        console.log("Took : ", (Date.now()/1000) - starttime," seconds.");
+    }
+    
+}
+
 
 
 document.getElementById("infer").onclick = infer;
+
+document.getElementById("test_Protocol").onclick = testProtocol;
